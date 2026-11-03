@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from sqlalchemy.orm import DeclarativeBase
 
 load_dotenv()
-POSTGRESQL_DATABASE_URL=os.get("POSTGRESQL_DATABASE_URL")
+POSTGRESQL_DATABASE_URL=os.getenv("POSTGRESQL_DATABASE_URL")
 
 #1. 비동기 전용 DB 엔진 생성
 engine=create_async_engine(
