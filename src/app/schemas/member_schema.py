@@ -19,3 +19,4 @@ class MemberCreateDTO(BaseModel):
     member_name:str|None=None
     member_age:int|None=None
     member_profile:str|None=""
+    member_provider: MemberProvider

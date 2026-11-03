@@ -9,7 +9,7 @@ from app.schemas.member_schema import(
 from sqlalchemy import insert,select,update,delete
 
 #예외처리는 여기서 하면안됨
-class DefaultRepository:
+class MemberRepository:
 
     #생성자 주입
     def __init__(self,db):
@@ -27,6 +27,15 @@ class DefaultRepository:
         return found_member
 
     #2. 회원가입
+    async def create_member(self,member:MemberCreateDTO):
+        new_member={
+            "member_email": member.member_email,
+            "member_pw": member.member_pw,
+            "member_name":member.member_name,
+            "member_age":member.member_age,
+            "member_profile":member.member_profile,
+            "member_provider":member.member_provider
+        }
     #3. 소셜 회원가입
     #4. 회원 정보 조회(id)
     #5. 회원 정보 조회(email,provider)
@@ -37,4 +46,4 @@ class DefaultRepository:
 
 #주입 팩토리 메서드
 def get_member_repository(db:AsyncSession=Depends(get_postgresql_db)):
-    return DefaultRepository(db)
+    return MemberRepository(db)

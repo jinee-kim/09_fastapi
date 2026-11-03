@@ -4,6 +4,8 @@ from app.security.security_headers import set_up_security
 from contextlib import asynccontextmanager
 from app.infrastructure.postgresql import engine, Base
 import app.models
+from app.apis import member_api
+
 
 @asynccontextmanager
 async def lifespan(app:FastAPI):
@@ -29,3 +31,5 @@ set_up_security(app)
 @app.get("/")
 def health_check():
     return{"message": "Hello World", "another":"두번째 메시지"}
+
+app.include_router(member_api.router,prefix="/members",tags=["members"])
