@@ -13,6 +13,18 @@ class MemberVO(BaseModel):
     member_provider:MemberProvider
     member_created_at:datetime|None=None
 
+class MemberResponseDTO(BaseModel):
+    id:int
+    member_email:str
+    member_name:str|None=None
+    member_age:int|None=None
+    member_profile:str|None="/members/default.jpg"
+    member_provider_id:str|None=None
+    member_provider:MemberProvider
+    member_created_at:datetime|None=None
+    class Config:
+            from_attributes=True
+
 class MemberCreateDTO(BaseModel):
     member_email:str
     member_pw:str|None=None
@@ -29,5 +41,31 @@ class MemberClaimDTO(BaseModel):
     id:int
     member_email:str
     member_provider:str
+    class Config:
+        from_attributes=True
+
+class SocialMemberCreateDTO(BaseModel):
+    member_email:str
+    member_name:str|None=None
+    member_age:int|None=None
+    member_profile:str|None="/members/default.jpg"
+    member_provider: MemberProvider|None
+
+    #ORM->Pydantic DTO
+    class Config:
+        from_attributes=True
+
+class SocialMemberClaimDTO(BaseModel):
+    id:int|None=None
+    member_email:str
+    member_provider:str
+    class Config:
+        from_attributes=True
+
+class MemberUpdateDTO(BaseModel):
+    member_pw:str|None=None
+    member_name:str|None=None
+    member_age:int|None=None
+    member_profile:str|None="/members/default.jpg"
     class Config:
         from_attributes=True
