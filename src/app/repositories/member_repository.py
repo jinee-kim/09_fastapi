@@ -4,7 +4,8 @@ from fastapi import Depends
 #모델,ORM
 from app.models.member_model import Member
 from app.schemas.member_schema import(
-    MemberCreateDTO
+    MemberCreateDTO,
+    MemberClaimDTO
 )
 from sqlalchemy import insert,select,update,delete
 
@@ -27,15 +28,27 @@ class MemberRepository:
         return found_member
 
     #2. 회원가입
-    async def create_member(self,member:MemberCreateDTO):
-        new_member={
-            "member_email": member.member_email,
-            "member_pw": member.member_pw,
-            "member_name":member.member_name,
-            "member_age":member.member_age,
-            "member_profile":member.member_profile,
-            "member_provider":member.member_provider
+    async def create_member(self,member:MemberCreateDTO)->MemberClaimDTO:
+        new_member=member.model_dump()
+        query=(
+            insert(Member)
+            .values(**new_member)
+        ).returning(
+            Member.id,
+            Member.member_email,
+            Member.member_provider
+        )
+        result=await self.db.execute(query)
+        await self.db.commit()
+        id,member_email,member_provider=result.first()
+        payload={
+            "id":id,
+            "member_email":member_email,
+            "member_provider":member_provider
         }
+        #dict->pydantic
+        claim_dto=MemberClaimDTO.model_validate(payload)
+        return claim_dto
     #3. 소셜 회원가입
     #4. 회원 정보 조회(id)
     #5. 회원 정보 조회(email,provider)

@@ -20,7 +20,7 @@ class Member(Base):
         nullable=False,
         default=MemberProvider.LOCAL.value
     )
-    member_created_at:Mapped[datetime]=mapped_column(DateTime, default=lambda:datetime.now(KST))
+    member_created_at:Mapped[datetime]=mapped_column(DateTime(timezone=True), default=lambda:datetime.now(KST))
 
     __table_args__=(
         UniqueConstraint("member_email","member_provider",name="uq_member_email_provider"),
