@@ -84,8 +84,8 @@ class MemberService:
         is_member_exist=await self.repo.exists_member_by_id(id)
         if not is_member_exist:
             raise HTTPException(
-                    status_code=404,
-                    detail="유효하지 않은 회원번호입니다."
+                status_code=404,
+                detail="유효하지 않은 회원번호입니다."
             )
         update_data=member.model_dump(exclude_unset=True)
 
@@ -94,6 +94,15 @@ class MemberService:
 
         updated_member=await self.repo.update_member(id,MemberUpdateDTO.model_validate(update_data))
         return MemberResponseDTO.model_validate(updated_member)
+
+    async def withdraw(self,id:int)->bool:
+        is_deleted=await self.repo.delete_member(id)
+        if not is_deleted:
+            raise HTTPException(
+                status_code=404,
+                detail="유효하지 않는 회원번호입니다."
+            )
+        return is_deleted
 
 
 

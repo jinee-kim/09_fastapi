@@ -65,6 +65,22 @@ async def get_all_data_page(
         data=paged_result
     )
 
+@router.delete(
+        "/delete",
+        summary="회원 정보 삭제",
+        response_model=ApiResponseDTO
+)
+async def withdraw(
+    id:int,
+    member_service=Depends(get_member_service)
+):
+    is_deleted=await member_service.withdraw(id)
+    return ApiResponseDTO(
+        success=True,
+        message="회원 탈퇴 성공",
+        data=is_deleted,        
+    )
+
 @router.put(
     "/{id}",
     summary="회원 정보 수정",

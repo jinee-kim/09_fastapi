@@ -113,7 +113,16 @@ class MemberRepository:
         await self.db.commit()
         updated_member=result.scalar_one_or_none()
         return updated_member
+    
     #8. 회원 삭제
+    async def delete_member(self,id:int)->bool:
+        query=(
+            delete(Member)
+            .where(Member.id==id)
+        )
+        result=await self.db.execute(query)
+        await self.db.commit()
+        return result.rowcount>0
 
 
 #주입 팩토리 메서드
