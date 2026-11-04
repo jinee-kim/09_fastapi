@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from app.models.member_model import Member
 
 class Post(Base):
-    __tablename__="members"
+    __tablename__="posts"
     id:Mapped[int]=mapped_column(BigInteger,Identity(),primary_key=True)
     post_title:Mapped[str]=mapped_column(Text,nullable=False)
     post_content:Mapped[str]=mapped_column(Text,nullable=False)

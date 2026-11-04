@@ -3,6 +3,10 @@ from sqlalchemy.orm import Mapped,mapped_column,relationship
 from datetime import datetime, timedelta,timezone
 from app.infrastructure.postgresql import Base
 from app.enums.member_enum import MemberProvider
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.post_model import Post
 
 KST=timezone(timedelta(hours=9))
 
@@ -24,4 +28,10 @@ class Member(Base):
 
     __table_args__=(
         UniqueConstraint("member_email","member_provider",name="uq_member_email_provider"),
+    )
+
+    posts:Mapped[list["Post"]]=relationship(
+    "Post",
+     back_populates="member", 
+     cascade="all, delete-orphan"
     )
