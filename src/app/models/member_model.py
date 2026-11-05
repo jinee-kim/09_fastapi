@@ -5,6 +5,7 @@ from app.infrastructure.postgresql import Base
 from app.enums.member_enum import MemberProvider
 from typing import TYPE_CHECKING
 
+#순환 참조
 if TYPE_CHECKING:
     from app.models.post_model import Post
 

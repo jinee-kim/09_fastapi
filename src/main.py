@@ -4,7 +4,7 @@ from app.security.security_headers import set_up_security
 from contextlib import asynccontextmanager
 from app.infrastructure.postgresql import engine, Base
 import app.models
-from app.apis import member_api
+from app.apis import member_api,post_api
 
 
 @asynccontextmanager
@@ -33,3 +33,4 @@ def health_check():
     return{"message": "Hello World", "another":"두번째 메시지"}
 
 app.include_router(member_api.router,prefix="/members",tags=["members"])
+app.include_router(post_api.router,prefix="/posts",tags=["posts"])

@@ -23,7 +23,7 @@ class MemberResponseDTO(BaseModel):
     member_provider:MemberProvider
     member_created_at:datetime|None=None
     class Config:
-            from_attributes=True
+        from_attributes=True
 
 class MemberCreateDTO(BaseModel):
     member_email:str

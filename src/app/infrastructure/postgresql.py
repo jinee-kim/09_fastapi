@@ -27,5 +27,8 @@ async def get_postgresql_db():
     async with AsyncSessionLocal() as db:
         try:
             yield db
+        except Exception:
+            db.rollback()
+            raise
         finally:
             await db.close()
