@@ -30,6 +30,22 @@ class PostService:
         new_post_id=await self.post_repo.create_post(member_id,post)
         return new_post_id
 
+    #게시글id로 게시글 1개 찾기
+    async def find_post_by_id(self,id:int):
+        found_post=await self.post_repo.find_post_by_id(id)
+        if not found_post:
+            raise HTTPException(
+                status_code=404,
+                detail="게시글 id가 존재하지 않습니다."
+            )
+        return found_post
+
+    #유저id로 모든 게시글 찾기
+    async def find_all_posts_by_memberid(self,member_id:int):
+        found_posts=await self.post_repo.find_all_post_by_memberid(member_id)
+        return found_posts
+    
+
 
 def get_post_service(
     post_repo:PostRepository=Depends(get_post_repository),

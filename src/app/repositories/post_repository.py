@@ -3,7 +3,7 @@ from sqlalchemy import insert,select,update,delete,func,exists
 from app.infrastructure.postgresql import get_postgresql_db
 from fastapi import Depends
 from app.models.post_model import Post
-from app.schemas.post_schema import PostCreateDTO
+from app.schemas.post_schema import PostVO,PostCreateDTO
 
 class PostRepository:
 
@@ -30,10 +30,22 @@ class PostRepository:
         new_post_id=result.scalar_one()
         return new_post_id
 
-    #게시글 1개 조회
+    #게시글id로 게시글 1개 조회
     async def find_post_by_id(self,id:int):
-        pass
-    #게시글 전체 조회
+        query=(
+            select(Post)
+            .where(Post.id==id)
+        )
+        result=await self.db.execute(query)
+        return result.scalar_one_or_none()
+    #멤버id로 게시글 전체 조회
+    async def find_all_post_by_memberid(self,member_id:int):
+        query=(
+            select(Post)
+            .where(Post.member_id==member_id)
+        )
+        result=await self.db.execute(query)
+        return result.scalars().all()
     #게시글 수정
     #게시글 삭제
 
