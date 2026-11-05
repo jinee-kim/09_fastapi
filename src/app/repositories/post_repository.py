@@ -1,9 +1,12 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import insert,select,update,delete,func,exists
+from sqlalchemy import insert,select,update,delete,func,exists,desc,asc,or_
 from app.infrastructure.postgresql import get_postgresql_db
 from fastapi import Depends
 from app.models.post_model import Post
-from app.schemas.post_schema import PostVO,PostCreateDTO
+from app.models.member_model import Member
+from app.schemas.post_schema import PostCreateDTO
+from app.enums.post_enum import PostSortEnum,PostSearchEnum
+from sqlalchemy.orm import joinedload
 
 class PostRepository:
 
@@ -34,6 +37,7 @@ class PostRepository:
     async def find_post_by_id(self,id:int):
         query=(
             select(Post)
+            .options(joinedload(Post.member))
             .where(Post.id==id)
         )
         result=await self.db.execute(query)
@@ -46,6 +50,85 @@ class PostRepository:
         )
         result=await self.db.execute(query)
         return result.scalars().all()
+
+    #게시글 페이지네이션+정렬 전체조회
+    async def find_post_by_paging(
+            self,
+            offset:int,
+            limit:int,
+            sort_by:PostSortEnum=PostSortEnum.LATEST.value
+    ):
+        query=(
+            select(Post).options(joinedload(Post.member))
+        )
+        if sort_by==PostSortEnum.OLDEST:
+            query=query.order_by(asc(Post.id))
+        elif sort_by==PostSortEnum.LATEST:
+            query=query.order_by(desc(Post.id))
+        else:
+            query=query.order_by(desc(Post.post_read_count))
+        #정렬된 상태에서 offset,limit처리
+        query=query.offset(offset).limit(limit)
+        result=await self.db.execute(query)
+        return result.scalars().all()
+
+    #게시글 전체 갯수 조회
+    async def count_posts(self)->int:
+        query=(select(func.count()).select_from(Post))
+        result=await self.db.execute(query)
+        return result.scalar_one()
+
+    #게시글 검색(제목,내용,작성자,제목+내용)
+    async def search_filter(
+            self, 
+            offset:int,
+            limit:int,
+            sort_by:PostSortEnum=PostSortEnum.LATEST.value,
+            search_keyword:PostSearchEnum=PostSearchEnum.TITLE.value,
+            search_detail:str|None=None
+            ):
+        
+        query=(select(Post).options(joinedload(Post.member)))
+        count_query=(select(func.count()).select_from(Post))
+
+        if search_keyword and search_detail:
+            search_word=f"%{search_detail}%"
+            condition=None
+
+            if search_keyword==PostSearchEnum.TITLE:
+                condition=Post.post_title.like(search_word)
+            elif search_keyword==PostSearchEnum.CONTENT:
+                condition=Post.post_content.like(search_word)
+            elif search_keyword==PostSearchEnum.WRITER:
+                query=query.join(Post.member)
+                count_query=count_query.join(Post.member)
+                condition=Member.member_name.like(search_word)
+            elif search_keyword==PostSearchEnum.TITLE_CONTENT:
+                condition=or_(
+                    Post.post_title.like(search_word),
+                    Post.post_content.like(search_word)
+                )
+            if condition is not None:
+                query=query.where(condition)
+                count_query=count_query.where(condition)
+
+        if sort_by==PostSortEnum.OLDEST:
+            query=query.order_by(asc(Post.id))
+        elif sort_by==PostSortEnum.LATEST:
+            query=query.order_by(desc(Post.id))
+        else:
+            query=query.order_by(desc(Post.post_read_count),(Post.id))
+
+        #정렬된 상태에서 offset,limit처리
+        query=query.offset(offset).limit(limit)
+        result=await self.db.execute(query)
+        posts=list(result.scalars().all())
+        count_result=await self.db.execute(count_query)
+        total_count=count_result.scalar_one()
+
+        return posts,total_count
+
+
     #게시글 수정
     #게시글 삭제
 
