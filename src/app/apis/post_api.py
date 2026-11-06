@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query, Depends
 from app.services.post_service import get_post_service, PostService
 from app.schemas.common_schema import ApiResponseDTO
-from app.schemas.post_schema import PostCreateDTO,PostVO,PostDetailResponseDTO
+from app.schemas.post_schema import PostCreateDTO,PostVO,PostDetailResponseDTO,PostResponseDTO
 from app.enums.post_enum import PostSortEnum,PostSearchEnum
 
 from app.models.post_model import Post
@@ -21,6 +21,74 @@ async def write_post(member_id:int,post:PostCreateDTO,post_service:PostService=D
         success=True,
         message="게시글 작성 성공",
         data={"newPostId":new_post_id}
+    )
+#게시글 검색 전체 조회(페이지네이션+정렬
+@router.get(
+        "/get_keyword",
+        summary="게시판 전체 조회(검색)",
+        response_model=ApiResponseDTO
+)
+async def get_posts(
+    offset:int=Query(0,ge=0),
+    limit:int=Query(10,ge=1,le=100),
+    sort_by:PostSortEnum=Query(PostSortEnum.LATEST.value,description="정렬기준(LATEST,OLDEST,VIEWS)"),
+    search_keyword:PostSearchEnum=Query(PostSearchEnum.TITLE,description="검색 기준(TITLE,CONTENT,WRITER,TITLE_CONTENT)"),
+    search_detail:str|None=Query(None,description="검색어"),
+    post_service:PostService=Depends(get_post_service),
+):
+    paged_posts=await post_service.search_posts_by_paging(
+        offset,
+        limit,
+        sort_by,
+        search_keyword,
+        search_detail
+    )
+    return ApiResponseDTO(
+        success=True,
+        message="전체 게시글 조회 성공",
+        data=paged_posts
+    )
+    pass
+    #paged_posts=await post_service.read_posts_by_paging(offset,limit,sort_by)
+    #return ApiResponseDTO(
+    #    success=True,
+    #    message="전체 게시글 조회 성공",
+    #   data=paged_posts,
+    #)
+
+@router.patch(
+        "/update",
+        summary="게시글 id를 통해 게시글 특정 후 제목과 내용 수정",
+        response_model=ApiResponseDTO[PostResponseDTO]
+)
+async def update_post_by_id(
+    post_id:int,
+    post_title:str,
+    post_content:str,
+    post_service:PostService=Depends(get_post_service)
+):
+    update_post=await post_service.update_post_by_id(post_id,post_title,post_content)
+    update_post=PostResponseDTO.model_validate(update_post)
+    return ApiResponseDTO(
+        success=True,
+        message="게시글 수정 성공",
+        data=update_post
+    )
+
+@router.delete(
+        "/delete{post_id}",
+        summary="게시글 id로 게시글 삭제",
+        response_model=ApiResponseDTO
+)
+async def delete_post_by_id(
+    post_id:int,
+    post_service:PostService=Depends(get_post_service)
+):
+    delete_post=await post_service.delete_post_by_id(post_id)
+    return ApiResponseDTO(
+        success=True,
+        message="게시글 삭제 성공",
+        data=delete_post
     )
 
 @router.get(
@@ -68,27 +136,7 @@ async def get_posts(
         data=paged_posts,
     )
 
-#게시글 검색 전체 조회(페이지네이션+정렬
-@router.get(
-        "",
-        summary="게시판 전체 조회(검색)",
-        response_model=ApiResponseDTO
-)
-async def get_posts(
-    offset:int=Query(0,ge=0),
-    limit:int=Query(10,ge=1,le=100),
-    sort_by:PostSortEnum=Query(PostSortEnum.LATEST.value,description="정렬기준(LATEST,OLDEST,VIEWS)"),
-    post_service:PostService=Depends(get_post_service),
-    search_keyword:PostSearchEnum=Query(PostSearchEnum.TITLE,description="검색 기준(TITLE,CONTENT,WRITER,TITLE_CONTENT)"),
-    search_detail:str|None=Query(None,description="검색어")
-):
-    pass
-    #paged_posts=await post_service.read_posts_by_paging(offset,limit,sort_by)
-    #return ApiResponseDTO(
-    #    success=True,
-    #    message="전체 게시글 조회 성공",
-    #   data=paged_posts,
-    #)
+
 
 
 

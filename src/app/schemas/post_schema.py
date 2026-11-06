@@ -31,6 +31,18 @@ class PostDetailResponseDTO(BaseModel):
     class Config:
             from_attributes=True
 
+class PostResponseDTO(BaseModel):
+    id:int
+    post_title:str
+    post_content:str
+    post_read_count:int
+    post_updated_at:datetime|None=None
+    post_created_at:datetime|None=None
+    class Config:
+            from_attributes=True
+
+
+
 class PostListResponseDTO(BaseModel):
     id:int
     post_title:str

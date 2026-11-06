@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException
 from app.repositories.post_repository import PostRepository, get_post_repository
 from app.repositories.member_repository import MemberRepository,get_member_repository
-from app.schemas.post_schema import PostCreateDTO,PostDetailResponseDTO,PostListResponseDTO
+from app.schemas.post_schema import PostCreateDTO,PostDetailResponseDTO,PostListResponseDTO,PostResponseDTO
 from app.schemas.common_schema import PageResponseDTO
 from app.enums.post_enum import PostSortEnum,PostSearchEnum
 import math
@@ -83,6 +83,36 @@ class PostService:
             limit=limit,
             items=items,
         )
+
+    #게시글 수정
+    async def update_post_by_id(
+            self,
+            post_id:int,
+            post_title:str,
+            post_content:str
+    ):
+        updated=await self.post_repo.update_post(post_id,post_title,post_content)
+
+        if updated is None:
+            raise HTTPException(
+                status_code=404,
+                detail="게시글 id가 존재하지 않습니다."
+            )
+        return updated
+
+    #게시글 삭제
+    async def delete_post_by_id(
+            self,
+            post_id:int
+    ):
+        is_deleted=await self.post_repo.delete_post(post_id)
+        if not is_deleted:
+            raise HTTPException(
+                status_code=404,
+                detail="게시글 id가 존재하지 않습니다."
+            )
+        return is_deleted
+        
 
 
 def get_post_service(

@@ -2,11 +2,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import insert,select,update,delete,func,exists,desc,asc,or_
 from app.infrastructure.postgresql import get_postgresql_db
 from fastapi import Depends
-from app.models.post_model import Post
+from app.models.post_model import Post, KST
 from app.models.member_model import Member
 from app.schemas.post_schema import PostCreateDTO
 from app.enums.post_enum import PostSortEnum,PostSearchEnum
 from sqlalchemy.orm import joinedload
+from datetime import datetime
 
 class PostRepository:
 
@@ -130,8 +131,35 @@ class PostRepository:
 
 
     #게시글 수정
-    #게시글 삭제
+    async def update_post(
+        self,
+        post_id:int,
+        post_title:str,
+        post_content:str
+    ):
+        cur_time=datetime.now(KST)
+        query=(
+            update(Post)
+            .where(Post.id==post_id)
+            .values(post_title=post_title,post_content=post_content,post_updated_at=cur_time)
+            .returning(Post)
+        )
+        result=await self.db.execute(query)
+        await self.db.commit()
+        return result.scalar_one_or_none()
 
+
+    #게시글 삭제
+    async def delete_post(
+            self,
+            post_id:int
+    )->bool:
+        query=(
+            delete(Post).where(Post.id==post_id)
+        )
+        result=await self.db.execute(query)
+        await self.db.commit()
+        return result.rowcount>0
 
 #주입 팩토리 메서드
 def get_post_repository(db:AsyncSession=Depends(get_postgresql_db)):
