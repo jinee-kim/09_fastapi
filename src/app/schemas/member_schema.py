@@ -77,3 +77,12 @@ class MemberSummaryDTO(BaseModel):
     member_profile:str|None="/members/default.jpg"
     class Config:
         from_attributes=True
+
+#토큰에 들어가는 최소한의 유저 정보
+class MemberClaimDTO(BaseModel):
+    id:int
+    member_email:str
+    member_provider:str
+    class Config:
+        from_attributes=True
+    

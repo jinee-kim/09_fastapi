@@ -10,6 +10,7 @@ from app.schemas.member_schema import(
     MemberResponseDTO,
     MemberUpdateDTO
 )
+from app.enums.member_enum import MemberProvider
 from sqlalchemy import insert,select,update,delete,func,exists
 
 #예외처리는 여기서 하면안됨
@@ -67,6 +68,12 @@ class MemberRepository:
     #4. 회원 정보 조회(id)
     async def find_member_by_id(self,id:int):
         query=select(Member).where(Member.id==id)
+        result=await self.db.execute(query)
+        found_member=result.scalar_one_or_none()
+        return found_member
+
+    async def find_member_by_email(self,member_email:str,member_provider:MemberProvider):
+        query=select(Member).where(Member.member_email==member_email,Member.member_provider==member_provider)
         result=await self.db.execute(query)
         found_member=result.scalar_one_or_none()
         return found_member

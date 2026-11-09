@@ -4,6 +4,7 @@ from app.models.member_model import Member
 from app.schemas.member_schema import(
     MemberCreateDTO,MemberClaimDTO,SocialMemberClaimDTO,MemberResponseDTO,MemberUpdateDTO
 )
+from app.enums.member_enum import MemberProvider
 from app.schemas.common_schema import PageResponseDTO
 from app.utils.security_util import get_pw_hash,vertify_pw
 import math
@@ -22,6 +23,11 @@ class MemberService:
                 status_code=409,
                 detail="이미 가입된 이메일입니다."
             )
+
+    #이메일로 유저 검증
+    async def check_member_by_email(self,member_email:str,member_provider:str):
+        result= await self.repo.exists_member_by_email(member_email,member_provider)
+        return result
 
     #회원 가입
     async def join(self,member:MemberCreateDTO)->MemberClaimDTO:
@@ -45,6 +51,16 @@ class MemberService:
             )
         return found_member
         #return MemberResponse.validate(found_member)
+
+    async def get_member_by_email(self,member_email:str,member_provider:MemberProvider)->Member:
+        found_member=await self.repo.find_member_by_email(member_email,member_provider)
+
+        if not found_member:
+            raise HTTPException(
+                status_code=404,
+                detail="회원 정보가 존재하지 않습니다."
+            )
+        return found_member
     
     #전체 멤버의 이메일과 프로바이더 조회
     async def get_email_and_provider(self)->list[SocialMemberClaimDTO]:

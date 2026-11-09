@@ -3,8 +3,9 @@ from app.security.cors import setup_cors
 from app.security.security_headers import set_up_security
 from contextlib import asynccontextmanager
 from app.infrastructure.postgresql import engine, Base
+from app.infrastructure.redis import start_redis_client
 import app.models
-from app.apis import member_api,post_api
+from app.apis import member_api,post_api,auth_api
 
 
 @asynccontextmanager
@@ -13,7 +14,8 @@ async def lifespan(app:FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         print("PostgreSQL 연결 성공!")
-
+    async with start_redis_client(app):
+        print("redis 연결 성공!")
     yield
 
 app=FastAPI(
@@ -34,3 +36,4 @@ def health_check():
 
 app.include_router(member_api.router,prefix="/members",tags=["members"])
 app.include_router(post_api.router,prefix="/posts",tags=["posts"])
+app.include_router(auth_api.router,prefix="/auth",tags=["auth"])
