@@ -43,4 +43,28 @@ async def login(
 ):
     login_member.member_provider=MemberProvider.LOCAL.value
     tokens=await auth_service.login_local(login_member)
-    print("tokens",tokens)
+    access_token=tokens.access_token
+    refresh_token=tokens.refresh_token
+
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=60*60*24
+    )
+
+    response.set_cookie(
+        key="refresh_tocken",
+        value=refresh_token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=60*60*24*30
+    )
+
+    return ApiResponseDTO(
+        success=True,
+        message="로그인 성공!",
+    )
