@@ -108,11 +108,14 @@ class AuthService:
         )
 
     #로그인(소셜)
-    async def login_social(self,login_request_dto:SocialLoginRequestDTO)->JwtTokenDTO:
+    async def login_social(self,login_request_dto:SocialLoginRequestDTO)->JwtTokenDTO|None:
         member_in_db=await self.member_service.get_member_by_email(
             login_request_dto.member_email,
             login_request_dto.member_provider
         )
+        if not member_in_db:
+            return None
+        
         member_id=member_in_db.id
         claims=MemberClaimDTO(
             id=member_id,

@@ -8,6 +8,7 @@ class MemberVO(BaseModel):
     member_pw:str|None=None
     member_name:str|None=None
     member_age:int|None=None
+    member_phone:str|None=None
     member_profile:str|None="/members/default.jpg"
     member_provider_id:str|None=None
     member_provider:MemberProvider
@@ -18,6 +19,7 @@ class MemberResponseDTO(BaseModel):
     member_email:str
     member_name:str|None=None
     member_age:int|None=None
+    member_phone:str|None=None
     member_profile:str|None="/members/default.jpg"
     member_provider_id:str|None=None
     member_provider:MemberProvider
@@ -30,9 +32,22 @@ class MemberCreateDTO(BaseModel):
     member_pw:str|None=None
     member_name:str|None=None
     member_age:int|None=None
+    member_phone:str|None=None
     member_profile:str|None="/members/default.jpg"
     member_provider: MemberProvider|None
+    member_provider_id:str|None=None
+    #ORM->Pydantic DTO
+    class Config:
+        from_attributes=True
 
+class SocialMemberCreateDTO(BaseModel):
+    member_email:str
+    member_name:str|None=None
+    member_age:int|None=None
+    member_phone:str|None=None
+    member_profile:str|None="/members/default.jpg"
+    member_provider: MemberProvider|None
+    member_provider_id:str|None=None
     #ORM->Pydantic DTO
     class Config:
         from_attributes=True
@@ -41,17 +56,6 @@ class MemberClaimDTO(BaseModel):
     id:int
     member_email:str
     member_provider:str
-    class Config:
-        from_attributes=True
-
-class SocialMemberCreateDTO(BaseModel):
-    member_email:str
-    member_name:str|None=None
-    member_age:int|None=None
-    member_profile:str|None="/members/default.jpg"
-    member_provider: MemberProvider|None
-
-    #ORM->Pydantic DTO
     class Config:
         from_attributes=True
 
@@ -66,6 +70,7 @@ class MemberUpdateDTO(BaseModel):
     member_pw:str|None=None
     member_name:str|None=None
     member_age:int|None=None
+    member_phone:str|None=None
     member_profile:str|None="/members/default.jpg"
     class Config:
         from_attributes=True

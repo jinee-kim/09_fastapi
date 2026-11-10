@@ -86,6 +86,7 @@ GOOGLE_USERINFO_URL=os.getenv("GOOGLE_USERINFO_URL")
 GOOGLE_CLIENT_ID=os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET=os.getenv("GOOGLE_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI=os.getenv("GOOGLE_REDIRECT_URI")
+FRONTEND_URL=os.getenv("FRONTEND_URL")
 
 #구글 로그인
 @router.get(
@@ -135,12 +136,42 @@ async def login_google_callback(
                 headers={"Authorization":f"Bearer {access_token}"}
             )
         user=user_res.json()
-        social_member=SocialLoginRequestDTO(
-            member_email=user.get("email"),
-            member_provider=MemberProvider.GOOGLE.value,
-            member_provider_id=user.get("sub")
+        user_params={
+            "member_email":user.get("email"),
+            "member_provider":MemberProvider.GOOGLE.value,
+            "member_provider_id":user.get("sub")
+        }
+        social_member=SocialLoginRequestDTO.model_validate(user_params)
+        tokens=await auth_service.login_social()
+
+        #비회원(최초 로그인)시 추가정보 입력창으로
+        if not tokens:
+            url=f"{FRONTEND_URL}/join-social-additional?{urlencode(user_params)}"
+            return RedirectResponse(url)
+
+        #정상 로그인
+        access_token=tokens.access_token
+        refresh_token=tokens.refresh_token
+    
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            secure=False,
+            samesite="lax",
+            max_age=60*60*24
         )
-        await auth_service.login_social(social_member)
+    
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            httponly=True,
+            secure=False,
+            samesite="lax",
+            max_age=60*60*24*30
+        )
+    
+        return RedirectResponse(url=FRONTEND_URL)
 
 #로그아웃
 @router.post(

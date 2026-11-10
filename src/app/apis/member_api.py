@@ -18,11 +18,23 @@ async def check_member(member_email:str,member_provider:str,member_service:Membe
         message="중복되지 않은 사용자"
     )
 
-@router.post("/join")
-async def join(member:MemberCreateDTO,member_service:MemberService=Depends(get_member_service)):
-    member.member_provider=MemberProvider.LOCAL.value
+@router.post(
+        "/join",
+        response_model=ApiResponseDTO
+    )
+async def join(
+    member:MemberCreateDTO,
+    member_service:MemberService=Depends(get_member_service)
+):
+    if not member.member_provider:
+        member.member_provider=MemberProvider.LOCAL.value
     member_claim:MemberClaimDTO=await member_service.join(member)
-    return member_claim
+
+    return ApiResponseDTO(
+        success=True,
+        message="회원가입 성공",
+        data=member_claim
+    )
 
 @router.get(
     "/get-email",
