@@ -8,7 +8,7 @@ def setup_cors(app: FastAPI):
 
     origins = [
         "*",
-        # "http://localhost:3000",
+        "http://localhost:3000",
         # "http://localhost:8000",
     ]
 

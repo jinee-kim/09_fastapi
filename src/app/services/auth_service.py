@@ -109,11 +109,38 @@ class AuthService:
 
     #로그인(소셜)
     async def login_social(self,login_request_dto:SocialLoginRequestDTO)->JwtTokenDTO:
-        pass
+        member_in_db=await self.member_service.get_member_by_email(
+            login_request_dto.member_email,
+            login_request_dto.member_provider
+        )
+        member_id=member_in_db.id
+        claims=MemberClaimDTO(
+            id=member_id,
+            member_email=member_in_db.member_email,
+            member_provider=member_in_db.member_provider
+        )
+        access_token=generate_access_token(claims)
+        refresh_token=generate_refresh_token(claims)
 
-        #소셜로그인
-        #로그아웃
-        #refresh토큰으로 access토큰 재발급
+        await self.save_refresh_token(member_id,refresh_token)
+
+        return JwtTokenDTO(
+            access_token=access_token,
+            refresh_token=refresh_token
+        )
+    
+    #로그아웃
+    async def logout(self,member_id:int,tokens:JwtTokenDTO)->None:
+        access_token=tokens.access_token
+        await self.save_blacklisted_token(access_token)
+        await self.redis_repo.delete(access_token)
+        #1. 토큰을 받아 decode해 필수정보를 가져옴(이건 컨트롤러가 담당)
+        #2. 블랙리스트에 accessToken등록
+
+
+    #refresh토큰으로 access토큰 재발급
+
+
 
 
 
