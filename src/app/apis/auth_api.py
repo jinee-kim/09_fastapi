@@ -104,8 +104,6 @@ async def login_google():
     }
     url=f"{GOOGLE_AUTH_URL}?{urlencode(params)}"
     return RedirectResponse(url)
-
-
 #구글 로그인 콜백
 @router.get(
     "/google/callback",
@@ -113,7 +111,7 @@ async def login_google():
 )
 async def login_google_callback(
     code:str,
-    response:Response,
+    response:RedirectResponse,
     auth_service:AuthService=Depends(get_auth_service)
 ):
     async with httpx.AsyncClient() as client:
@@ -141,37 +139,121 @@ async def login_google_callback(
             "member_provider":MemberProvider.GOOGLE.value,
             "member_provider_id":user.get("sub")
         }
-        social_member=SocialLoginRequestDTO.model_validate(user_params)
-        tokens=await auth_service.login_social()
+        return await _handle_social_login_or_join(user_params,auth_service)
 
-        #비회원(최초 로그인)시 추가정보 입력창으로
-        if not tokens:
-            url=f"{FRONTEND_URL}/join-social-additional?{urlencode(user_params)}"
-            return RedirectResponse(url)
+KAKAO_CLIENT_ID=os.getenv("KAKAO_CLIENT_ID")
+KAKAO_CLIENT_SECRET=os.getenv("KAKAO_CLIENT_SECRET")
+KAKAO_REDIRECT_URI=os.getenv("KAKAO_REDIRECT_URI")
+KAKAO_AUTH_URL=os.getenv("KAKAO_AUTH_URL")
+KAKAO_TOKEN_URL=os.getenv("KAKAO_TOKEN_URL")
+KAKAO_USERINFO_URL=os.getenv("KAKAO_USERINFO_URL")
 
-        #정상 로그인
-        access_token=tokens.access_token
-        refresh_token=tokens.refresh_token
-    
-        response.set_cookie(
-            key="access_token",
-            value=access_token,
-            httponly=True,
-            secure=False,
-            samesite="lax",
-            max_age=60*60*24
+#카카오 로그인
+@router.get(
+    "/kakao",
+    summary="카카오 로그인"
+)
+async def login_kakao():
+    params={
+        "client_id":KAKAO_CLIENT_ID,
+        "redirect_uri":KAKAO_REDIRECT_URI,
+        "response_type":"code",
+    }
+    url=f"{KAKAO_AUTH_URL}?{urlencode(params)}"
+    return RedirectResponse(url)
+
+@router.get(
+    "/kakao/callback",
+    summary="카카오 로그인 콜백"
+)
+async def login_kakao_callback(
+    code:str,
+    response:Response,
+    auth_service:AuthService=Depends(get_auth_service)
+):
+    async with httpx.AsyncClient() as client:
+        token_res=await client.post(
+            KAKAO_TOKEN_URL,
+            data={
+                "code":code,
+                "client_id":KAKAO_CLIENT_ID,
+                "client_secret":KAKAO_CLIENT_SECRET,
+                "redirect_uri":KAKAO_REDIRECT_URI,
+                "grant_type":"authorization_code"
+            }
         )
-    
-        response.set_cookie(
-            key="refresh_token",
-            value=refresh_token,
-            httponly=True,
-            secure=False,
-            samesite="lax",
-            max_age=60*60*24*30
+        token_data=token_res.json()
+        access_token=token_data.get("access_token")
+        async with httpx.AsyncClient() as client:
+            user_res=await client.get(
+                KAKAO_USERINFO_URL,
+                headers={"Authorization":f"Bearer {access_token}"}
+            )
+        user=user_res.json()
+        user_profile=user.get("kakao_account")
+        user_params={
+            "member_email":user_profile.get("email"),
+            "member_provider":MemberProvider.KAKAO.value,
+            "member_provider_id":str(user.get("id"))
+        }
+        return await _handle_social_login_or_join(user_params,auth_service)
+
+NAVER_CLIENT_ID=os.getenv("NAVER_CLIENT_ID")
+NAVER_CLIENT_SECRET=os.getenv("NAVER_CLIENT_SECRET")
+NAVER_REDIRECT_URI=os.getenv("NAVER_REDIRECT_URI")
+NAVER_AUTH_URL=os.getenv("NAVER_AUTH_URL")
+NAVER_TOKEN_URL=os.getenv("NAVER_TOKEN_URL")
+NAVER_USERINFO_URL=os.getenv("NAVER_USERINFO_URL")
+
+#네이버 로그인
+@router.get(
+    "/naver",
+    summary="네이버 로그인"
+)
+async def login_naver():
+    params={
+        "client_id":NAVER_CLIENT_ID,
+        "redirect_uri":NAVER_REDIRECT_URI,
+        "response_type":"code",
+    }
+    url=f"{NAVER_AUTH_URL}?{urlencode(params)}"
+    return RedirectResponse(url)
+#네이버 로그인 콜백
+@router.get(
+    "/naver/callback",
+    summary="네이버 로그인 콜백"
+)
+async def login_naver_callback(
+    code:str,
+    response:Response,
+    auth_service:AuthService=Depends(get_auth_service)
+):
+    async with httpx.AsyncClient() as client:
+        token_res=await client.post(
+            NAVER_TOKEN_URL,
+            data={
+                "code":code,
+                "client_id":NAVER_CLIENT_ID,
+                "client_secret":NAVER_CLIENT_SECRET,
+                "redirect_uri":NAVER_REDIRECT_URI,
+                "grant_type":"authorization_code"
+            }
         )
-    
-        return RedirectResponse(url=FRONTEND_URL)
+        token_data=token_res.json()
+        access_token=token_data.get("access_token")
+        async with httpx.AsyncClient() as client:
+            user_res=await client.get(
+                NAVER_USERINFO_URL,
+                headers={"Authorization":f"Bearer {access_token}"}
+            )
+        user=user_res.json()
+        user_profile=user.get("response")
+        user_params={
+            "member_email":user_profile.get("email"),
+            "member_provider":MemberProvider.NAVER.value,
+            "member_provider_id":str(user_profile.get("id"))
+        }
+        return await _handle_social_login_or_join(user_params,auth_service)
 
 #로그아웃
 @router.post(
@@ -191,8 +273,78 @@ async def logout(
     #3. 화면 쿠키 삭제
     response.delete_cookie("access_token")
     response.delete_cookie("refresh_token")
+     #4. 화면으로 ApiResponseDTO전달
     return ApiResponseDTO(
         success=True,
         message="로그아웃 성공"
     )
-    #4. 화면으로 ApiResponseDTO전달
+
+@router.get(
+        "/refresh",
+        response_model=ApiResponseDTO,
+        summary="토큰 재발급"
+)
+async def refresh(
+    response:Response,
+    tokens:JwtTokenDTO=Depends(get_tokens),
+    auth_service:AuthService=Depends(get_auth_service)
+):
+    refresh_token=tokens.refresh_token
+    try:
+        access_token=await auth_service.refresh(refresh_token)
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            secure=False,
+            samesite="lax",
+            max_age=60*60*24
+        )
+        return ApiResponseDTO(
+            success=True,
+            message="Access Token 재발급 성공"
+        )
+    except Exception as e:
+        response.delete_cookie("access_token")
+        response.delete_cookie("refresh_token")
+        return ApiResponseDTO(
+            success=False,
+            message="Refresh Token 오류"
+        )
+
+
+
+async def _handle_social_login_or_join(user_params:dict,auth_service:AuthService):
+    social_member=SocialLoginRequestDTO.model_validate(user_params)
+    tokens=await auth_service.login_social_or_join(social_member)
+
+    #비회원(최초 로그인)시 추가정보 입력창으로
+    if not tokens:
+        url=f"{FRONTEND_URL}/join-social-additional?{urlencode(user_params)}"
+        return RedirectResponse(url)
+
+    #정상 로그인
+    access_token=tokens.access_token
+    refresh_token=tokens.refresh_token
+
+    response=RedirectResponse(url=FRONTEND_URL)
+
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=60*60*24
+    )
+
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=60*60*24*30
+    )
+
+    return response

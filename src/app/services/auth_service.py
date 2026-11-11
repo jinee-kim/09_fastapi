@@ -12,7 +12,7 @@ from app.utils.jwt_token_util import(
 from app.utils.security_util import vertify_pw
 from app.services.member_service import get_member_service,MemberService
 from app.schemas.auth_schema import JwtTokenDTO,LoginRequestDTO,SocialLoginRequestDTO
-from app.schemas.member_schema import MemberClaimDTO
+from app.schemas.member_schema import MemberClaimDTO, MemberCreateDTO
 
 load_dotenv()
 TOKEN_BLACKLIST_PREFIX=os.getenv("TOKEN_BLACKLIST_PREFIX")
@@ -131,6 +131,42 @@ class AuthService:
             access_token=access_token,
             refresh_token=refresh_token
         )
+    #로그인/회원가입(소셜)
+    async def login_social_or_join(self,login_request_dto:SocialLoginRequestDTO)->JwtTokenDTO|None:
+        member_email=login_request_dto.member_email
+        member_provider=login_request_dto.member_provider
+        member_provider_id=login_request_dto.member_provider_id
+
+        member_in_db=await self.member_service.get_member_by_email(
+            member_email=member_email,
+            member_provider=member_provider
+        )
+
+        if not member_in_db:
+            new_member=MemberCreateDTO(
+                member_email=member_email,
+                member_provider=member_provider,
+                member_provider_id=member_provider_id
+            )
+            claims=await self.member_service.join(new_member)
+            member_id=claims.id
+        else:
+            member_id=member_in_db.id
+            claims=MemberClaimDTO(
+                id=member_id,
+                member_email=member_in_db.member_email,
+                member_provider=member_in_db.member_provider
+            )
+
+        access_token=generate_access_token(claims)
+        refresh_token=generate_refresh_token(claims)
+
+        await self.save_refresh_token(member_id,refresh_token)
+
+        return JwtTokenDTO(
+            access_token=access_token,
+            refresh_token=refresh_token
+        )
     
     #로그아웃
     async def logout(self,member_id:int,tokens:JwtTokenDTO)->None:
@@ -142,6 +178,16 @@ class AuthService:
 
 
     #refresh토큰으로 access토큰 재발급
+    async def refresh(self,refresh_token:str)->str:
+        payload=parse_token(refresh_token)
+        member_id=payload.id
+        is_valid:bool=await self.validate_refresh_token(member_id,refresh_token)
+        if not is_valid:
+            raise(HTTPException)(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                message="유효하지 않은 Refresh Token"
+            )
+        return reissue_acces_token(refresh_token)
 
 
 

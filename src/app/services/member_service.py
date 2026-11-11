@@ -2,7 +2,7 @@ from fastapi import Depends, HTTPException
 from app.repositories.member_repository import MemberRepository, get_member_repository
 from app.models.member_model import Member
 from app.schemas.member_schema import(
-    MemberCreateDTO,MemberClaimDTO,SocialMemberClaimDTO,MemberResponseDTO,MemberUpdateDTO
+    MemberCreateDTO,MemberClaimDTO,SocialMemberClaimDTO,MemberResponseDTO,MemberUpdateDTO,MemberProvider
 )
 from app.enums.member_enum import MemberProvider
 from app.schemas.common_schema import PageResponseDTO
@@ -34,7 +34,7 @@ class MemberService:
         await self.check_duplicate_member(member.member_email,member.member_provider)
         #이메일,비밀번호,이름,나이,휴대폰 번호 를 입력받아서 db에 저장
         #비밀번호는 암호화
-        encrypted_pw=get_pw_hash(member.member_pw)
+        encrypted_pw=get_pw_hash(member.member_pw) if member.member_provider==MemberProvider.LOCAL.value else member.member_pw
         new_member=MemberCreateDTO(
             **member.model_dump(exclude={"member_pw"}),
             member_pw=encrypted_pw
@@ -56,10 +56,7 @@ class MemberService:
         found_member=await self.repo.find_member_by_email(member_email,member_provider)
 
         if not found_member:
-            raise HTTPException(
-                status_code=404,
-                detail="회원 정보가 존재하지 않습니다."
-            )
+            return None
         return found_member
     
     #전체 멤버의 이메일과 프로바이더 조회

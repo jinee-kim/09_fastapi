@@ -52,7 +52,6 @@ class MemberRepository:
             Member.member_provider
         )
         result=await self.db.execute(query)
-        await self.db.commit()
         id,member_email,member_provider=result.first()
         payload={
             "id":id,
@@ -61,6 +60,7 @@ class MemberRepository:
         }
         #dict->pydantic
         claim_dto=MemberClaimDTO.model_validate(payload)
+        await self.db.commit()
         return claim_dto
     #3. 소셜 회원가입
     

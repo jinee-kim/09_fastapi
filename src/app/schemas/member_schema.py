@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+from pydantic import BaseModel,ConfigDict
+from pydantic.alias_generators import to_camel
 from datetime import datetime
 from app.enums.member_enum import MemberProvider
 
@@ -37,8 +38,7 @@ class MemberCreateDTO(BaseModel):
     member_provider: MemberProvider|None
     member_provider_id:str|None=None
     #ORM->Pydantic DTO
-    class Config:
-        from_attributes=True
+    model_config=ConfigDict(alias_generator=to_camel,populate_by_name=True,from_attributes=True)
 
 class SocialMemberCreateDTO(BaseModel):
     member_email:str
@@ -49,8 +49,8 @@ class SocialMemberCreateDTO(BaseModel):
     member_provider: MemberProvider|None
     member_provider_id:str|None=None
     #ORM->Pydantic DTO
-    class Config:
-        from_attributes=True
+    model_config=ConfigDict(alias_generator=to_camel,populate_by_name=True,from_attributes=True)
+
 
 class MemberClaimDTO(BaseModel):
     id:int

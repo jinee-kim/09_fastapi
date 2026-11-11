@@ -3,23 +3,28 @@ from app.services.member_service import get_member_service,MemberService
 from app.enums.member_enum import MemberProvider
 from app.schemas.member_schema import MemberResponseDTO,MemberCreateDTO,MemberClaimDTO,SocialMemberClaimDTO,MemberUpdateDTO
 from app.schemas.common_schema import ApiResponseDTO
+from app.dependencies.auth_dependency import get_current_member
 
 router=APIRouter()
 
 @router.post(
-    "/check-member",
-    summary="로컬 회원 가입",
+    "/check-member", 
     response_model=ApiResponseDTO
 )
-async def check_member(member_email:str,member_provider:str,member_service:MemberService=Depends(get_member_service)):
-    await member_service.check_duplicate_member(member_email,member_provider)
+async def check_member(
+    member_email: str, 
+    member_provider: str, 
+    member_service = Depends(get_member_service)
+):
+    await member_service.check_duplicate_member(member_email, member_provider)
     return ApiResponseDTO(
         success=True,
-        message="중복되지 않은 사용자"
+        message="중복되지 않은 사용자",
     )
 
 @router.post(
         "/join",
+        summary="로컬 회원가입",
         response_model=ApiResponseDTO
     )
 async def join(
@@ -122,3 +127,21 @@ async def get_members_by_id(id:int,member_service:MemberService=Depends(get_memb
         data=MemberResponseDTO.model_validate(found_member),
     )
 
+#access_token ->사용자를 전달하는 서비스
+
+@router.post(
+    "/me",
+    response_model=ApiResponseDTO[MemberResponseDTO],
+    summary="Access Token으로 회원정보 조회"
+)
+async def me(
+    current_member:MemberClaimDTO=Depends(get_current_member),
+    member_service:MemberService=Depends(get_member_service)
+):
+    member_id=current_member.id
+    found_member=await member_service.get_member_by_id(member_id)
+    return ApiResponseDTO(
+        success=True,
+        message="회원 정보 조회 완료",
+        data=MemberResponseDTO.model_validate(found_member)
+    )
