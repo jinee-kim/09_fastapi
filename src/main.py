@@ -40,4 +40,4 @@ def health_check():
 app.include_router(member_api.router,prefix="/members",tags=["members"])
 app.include_router(post_api.router,prefix="/posts",tags=["posts"])
 app.include_router(auth_api.router,prefix="/auth",tags=["auth"])
-app.include_router(s3_api.router,prefix="/s3",tags=["s3"])
+app.include_router(s3_api.router,prefix="/uploads",tags=["s3"])
